@@ -25,7 +25,8 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-
+#include <stdio.h>
+#include "rtc.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -50,7 +51,18 @@
 
 /* Private function prototypes -----------------------------------------------*/
 /* USER CODE BEGIN FunctionPrototypes */
-
+void Task_Rtc(void* param)
+{
+	char* date;
+	char* time;
+	while(1){
+		date = rtc_get_date();
+		time = rtc_get_time();
+		printf("Date\t%s \n", date);
+		printf("Time\t%s \n", time);
+		vTaskDelay(100);
+	}
+}
 /* USER CODE END FunctionPrototypes */
 
 /* Private application code --------------------------------------------------*/
