@@ -10,8 +10,8 @@
 #include "string.h"
 extern RTC_HandleTypeDef hrtc;
 //typedef QueueHandle_t queue_print;
-static char showtime[40];
-static char showdate[40];
+static char showtime[40] = {NULL};
+static char showdate[40] = {NULL};
 
 void rtc_show_time_date_itm(void) {
 	RTC_DateTypeDef rtc_date;
@@ -68,7 +68,7 @@ char* rtc_get_date(void) {
 	HAL_RTC_GetDate(&hrtc, &rtc_date, RTC_FORMAT_BIN);
 
 	/* Display date Format : date-month-year */
-	sprintf((char*) showdate, "\t%02d-%02d-%2d\n", rtc_date.Month,
+	sprintf((char*) showdate, "%02d-%02d-%2d", rtc_date.Month,
 			rtc_date.Date, 2000 + rtc_date.Year);
 
 	return showdate;

@@ -68,8 +68,11 @@ const osThreadAttr_t defaultTask_attributes = { .name = "defaultTask",
 		.stack_size = 128 * 4, .priority = (osPriority_t) osPriorityNormal, };
 /* USER CODE BEGIN PV */
 TaskHandle_t task_rtc;
+TaskHandle_t task_lcd;
 
-QueueHandle_t queueLcd;
+QueueHandle_t queue_lcd;
+
+//char* lcdDisplayStr[2];
 
 /* USER CODE END PV */
 
@@ -103,7 +106,7 @@ void StartDefaultTask(void *argument);
  */
 int main(void) {
 	/* USER CODE BEGIN 1 */
-
+	BaseType_t status;
 	/* USER CODE END 1 */
 
 	/* MCU Configuration--------------------------------------------------------*/
@@ -128,12 +131,12 @@ int main(void) {
 	MX_DMA_Init();
 	MX_ADC1_Init();
 	MX_I2C1_Init();
-//	MX_IWDG_Init();
-	MX_RNG_Init();
+//  MX_IWDG_Init();
+//  MX_RNG_Init();
 	MX_RTC_Init();
 	MX_TIM1_Init();
 	MX_USB_OTG_FS_PCD_Init();
-//	MX_WWDG_Init();
+//  MX_WWDG_Init();
 	/* USER CODE BEGIN 2 */
 
 	/* USER CODE END 2 */
@@ -155,18 +158,21 @@ int main(void) {
 
 	/* USER CODE BEGIN RTOS_QUEUES */
 	/* add queues, ... */
+	queue_lcd = xQueueCreate(10, sizeof(sizeof(size_t))); //store address of pointer
+	configASSERT(queue_lcd != NULL);
 	/* USER CODE END RTOS_QUEUES */
 
 	/* Create the thread(s) */
 	/* creation of defaultTask */
 	defaultTaskHandle = osThreadNew(StartDefaultTask, NULL,
 			&defaultTask_attributes);
-	xTaskCreate(Task_Rtc, "Rtc Task", 250, NULL, 3, &task_rtc);
-
 
 	/* USER CODE BEGIN RTOS_THREADS */
 	/* add threads, ... */
-
+	status = xTaskCreate(Task_Lcd, "lcd task", 250, NULL, 3, task_lcd);
+	configASSERT(status == pdPASS);
+	status = xTaskCreate(Task_Rtc, "rtc_task", 250, NULL, 3, task_rtc);
+	configASSERT(status == pdPASS);
 	/* USER CODE END RTOS_THREADS */
 
 	/* USER CODE BEGIN RTOS_EVENTS */
@@ -729,9 +735,9 @@ static void MX_GPIO_Init(void) {
 
 	/*Configure GPIO pins : PB1 PB2 PB10 PB11
 	 PB12 PB15 PB4 PB5
-	 PB8 */
+	 PB6 */
 	GPIO_InitStruct.Pin = GPIO_PIN_1 | GPIO_PIN_2 | GPIO_PIN_10 | GPIO_PIN_11
-			| GPIO_PIN_12 | GPIO_PIN_15 | GPIO_PIN_4 | GPIO_PIN_5 | GPIO_PIN_8;
+			| GPIO_PIN_12 | GPIO_PIN_15 | GPIO_PIN_4 | GPIO_PIN_5 | GPIO_PIN_6;
 	GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
 	GPIO_InitStruct.Pull = GPIO_NOPULL;
 	HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);

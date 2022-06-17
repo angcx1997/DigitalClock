@@ -1,21 +1,21 @@
 /* USER CODE BEGIN Header */
 /**
-  ******************************************************************************
-  * File Name          : freertos.c
-  * Description        : Code for freertos applications
-  ******************************************************************************
-  * @attention
-  *
-  * <h2><center>&copy; Copyright (c) 2022 STMicroelectronics.
-  * All rights reserved.</center></h2>
-  *
-  * This software component is licensed by ST under Ultimate Liberty license
-  * SLA0044, the "License"; You may not use this file except in compliance with
-  * the License. You may obtain a copy of the License at:
-  *                             www.st.com/SLA0044
-  *
-  ******************************************************************************
-  */
+ ******************************************************************************
+ * File Name          : freertos.c
+ * Description        : Code for freertos applications
+ ******************************************************************************
+ * @attention
+ *
+ * <h2><center>&copy; Copyright (c) 2022 STMicroelectronics.
+ * All rights reserved.</center></h2>
+ *
+ * This software component is licensed by ST under Ultimate Liberty license
+ * SLA0044, the "License"; You may not use this file except in compliance with
+ * the License. You may obtain a copy of the License at:
+ *                             www.st.com/SLA0044
+ *
+ ******************************************************************************
+ */
 /* USER CODE END Header */
 
 /* Includes ------------------------------------------------------------------*/
@@ -26,12 +26,20 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include <stdio.h>
+#include <queue.h>
 #include "rtc.h"
+#include "i2c_lcd.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
 /* USER CODE BEGIN PTD */
+typedef enum {
+	State_Normal = 0x00, State_Menu = 0x02
+} State_e;
 
+typedef struct {
+	char **line[2];
+} LcdDisplayData_t;
 /* USER CODE END PTD */
 
 /* Private define ------------------------------------------------------------*/
@@ -46,23 +54,58 @@
 
 /* Private variables ---------------------------------------------------------*/
 /* USER CODE BEGIN Variables */
+extern I2C_HandleTypeDef hi2c1;
+extern RTC_HandleTypeDef hrtc;
 
+extern QueueHandle_t queue_lcd;
+
+//extern char* lcdDisplayStr[2];
 /* USER CODE END Variables */
 
 /* Private function prototypes -----------------------------------------------*/
 /* USER CODE BEGIN FunctionPrototypes */
-void Task_Rtc(void* param)
-{
-	char* date;
-	char* time;
-	while(1){
+void Task_Rtc(void *param) {
+	LcdDisplayData_t *rtcSender;
+	char *date;
+	char *time;
+	while (1) {
 		date = rtc_get_date();
 		time = rtc_get_time();
-		printf("Date\t%s \n", date);
-		printf("Time\t%s \n", time);
-		vTaskDelay(100);
+		rtcSender = pvPortMalloc(sizeof(LcdDisplayData_t));
+		rtcSender->line[0] = &date;
+		rtcSender->line[1] = &time;
+		xQueueSend(queue_lcd, &rtcSender, portMAX_DELAY);
+		vTaskDelay(50);
 	}
 }
+
+void Task_Lcd(void *param) {
+	LcdDisplayData_t *rtcReceiver;
+
+	if (lcd16x2_i2c_init(&hi2c1) == false) {
+		Error_Handler();
+	}
+
+	lcd16x2_i2c_setCursor(0, 0);
+	lcd16x2_i2c_printf("Digital Clock");
+	HAL_Delay(1);
+	lcd16x2_i2c_setCursor(1, 0);
+	lcd16x2_i2c_printf("Hello!");
+	HAL_Delay(1000);
+	lcd16x2_i2c_clear();
+	while (1) {
+		xQueueReceive(queue_lcd, &rtcReceiver, portMAX_DELAY);
+		lcd16x2_i2c_clear();
+		lcd16x2_i2c_setCursor(0, 0);
+		lcd16x2_i2c_printf(*(rtcReceiver->line[0]));
+		vTaskDelay(1);
+		lcd16x2_i2c_setCursor(1, 0);
+		lcd16x2_i2c_printf(*(rtcReceiver->line[1]));
+		vPortFree(rtcReceiver);
+		vTaskDelay(1);
+	}
+}
+
 /* USER CODE END FunctionPrototypes */
 
 /* Private application code --------------------------------------------------*/
