@@ -69,7 +69,7 @@ const osThreadAttr_t defaultTask_attributes = { .name = "defaultTask",
 /* USER CODE BEGIN PV */
 TaskHandle_t task_rtc;
 TaskHandle_t task_lcd;
-
+TaskHandle_t task_stateControl;
 QueueHandle_t queue_lcd;
 
 volatile uint8_t button_input = 0;
@@ -169,9 +169,11 @@ int main(void) {
 
 	/* USER CODE BEGIN RTOS_THREADS */
 	/* add threads, ... */
-	status = xTaskCreate(Task_Lcd, "lcd task", 250, NULL, 3, task_lcd);
+	status = xTaskCreate(Task_StateController, "StateController task", 250, NULL, 3, &task_stateControl);
 	configASSERT(status == pdPASS);
-	status = xTaskCreate(Task_Rtc, "rtc_task", 250, NULL, 3, task_rtc);
+	status = xTaskCreate(Task_Lcd, "lcd task", 250, NULL, 3, &task_lcd);
+	configASSERT(status == pdPASS);
+	status = xTaskCreate(Task_Rtc, "rtc_task", 250, NULL, 3, &task_rtc);
 	configASSERT(status == pdPASS);
 	/* USER CODE END RTOS_THREADS */
 
@@ -803,9 +805,15 @@ static void MX_GPIO_Init(void) {
  * @retval None
  */
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
+
 	switch (GPIO_Pin) {
-	case USER_Btn_Pin:
-		button_input ^= 1;
+	case USER_Btn_Pin:;
+		BaseType_t xHigherPriorityTaskWoken;
+		xTaskNotifyFromISR(task_stateControl,
+							   0,
+							   eNoAction,
+							   &xHigherPriorityTaskWoken );
+		portYIELD_FROM_ISR( xHigherPriorityTaskWoken );
 		break;
 	default:
 		break;

@@ -27,6 +27,7 @@
 /* USER CODE BEGIN Includes */
 #include <stdio.h>
 #include <queue.h>
+#include <limits.h>
 #include "rtc.h"
 #include "i2c_lcd.h"
 /* USER CODE END Includes */
@@ -34,7 +35,15 @@
 /* Private typedef -----------------------------------------------------------*/
 /* USER CODE BEGIN PTD */
 typedef enum {
-	State_Normal = 0x00, State_Menu = 0x02
+	State_Normal = 0x00,
+//	State_Menu = 0x02,
+	State_Configure_Date_DD,
+	State_Configure_DATE_MM,
+	State_Configure_Date_YY,
+	State_Configure_Time_HH,
+	State_Configure_Time_MM,
+	State_Configure_Time_SS,
+	State_End,
 } State_e;
 
 typedef struct {
@@ -57,6 +66,10 @@ typedef struct {
 extern I2C_HandleTypeDef hi2c1;
 extern RTC_HandleTypeDef hrtc;
 
+extern TaskHandle_t task_rtc;
+extern TaskHandle_t task_lcd;
+extern TaskHandle_t task_stateControl;
+
 extern QueueHandle_t queue_lcd;
 
 State_e systemState = State_Normal;
@@ -64,10 +77,25 @@ State_e systemState = State_Normal;
 
 /* Private function prototypes -----------------------------------------------*/
 /* USER CODE BEGIN FunctionPrototypes */
+void Task_StateController(void* param){
+	while(1){
+		if (xTaskNotifyWait(0x00, UINT_MAX, (uint32_t*)NULL, portMAX_DELAY) == pdTRUE){
+			//Delay added for debouncing
+			vTaskDelay(50);
+			systemState++;
+			if(systemState == State_End){
+				systemState = State_Normal;
+			}
+		}
+	}
+
+}
+
 void Task_Rtc(void *param) {
 	LcdDisplayData_t *rtcSender;
 	char *date;
 	char *time;
+	uint32_t ulNotifiedValue;
 	while (1) {
 		switch (systemState) {
 			case State_Normal:
