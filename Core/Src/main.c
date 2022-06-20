@@ -72,8 +72,7 @@ TaskHandle_t task_lcd;
 
 QueueHandle_t queue_lcd;
 
-//char* lcdDisplayStr[2];
-
+volatile uint8_t button_input = 0;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -107,6 +106,7 @@ void StartDefaultTask(void *argument);
 int main(void) {
 	/* USER CODE BEGIN 1 */
 	BaseType_t status;
+	button_input = 0;
 	/* USER CODE END 1 */
 
 	/* MCU Configuration--------------------------------------------------------*/
@@ -135,7 +135,7 @@ int main(void) {
 //  MX_RNG_Init();
 	MX_RTC_Init();
 	MX_TIM1_Init();
-	MX_USB_OTG_FS_PCD_Init();
+//  MX_USB_OTG_FS_PCD_Init();
 //  MX_WWDG_Init();
 	/* USER CODE BEGIN 2 */
 
@@ -679,6 +679,8 @@ static void MX_GPIO_Init(void) {
 	GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
 	GPIO_InitStruct.Pull = GPIO_NOPULL;
 	HAL_GPIO_Init(USER_Btn_GPIO_Port, &GPIO_InitStruct);
+	HAL_NVIC_SetPriority(EXTI15_10_IRQn, 5, 0);
+	HAL_NVIC_EnableIRQ(EXTI15_10_IRQn);
 
 	/*Configure GPIO pins : PF0 PF1 PF2 PF3
 	 PF4 PF5 PF6 PF7
@@ -795,7 +797,20 @@ static void MX_GPIO_Init(void) {
 }
 
 /* USER CODE BEGIN 4 */
-
+/**
+ * @brief  EXTI line detection callbacks.
+ * @param  GPIO_Pin Specifies the pins connected EXTI line
+ * @retval None
+ */
+void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
+	switch (GPIO_Pin) {
+	case USER_Btn_Pin:
+		button_input ^= 1;
+		break;
+	default:
+		break;
+	}
+}
 /* USER CODE END 4 */
 
 /* USER CODE BEGIN Header_StartDefaultTask */
@@ -809,6 +824,7 @@ void StartDefaultTask(void *argument) {
 	/* USER CODE BEGIN 5 */
 	/* Infinite loop */
 	for (;;) {
+//		button_input = 0;
 		osDelay(1);
 	}
 	/* USER CODE END 5 */
