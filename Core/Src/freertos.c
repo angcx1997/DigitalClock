@@ -59,7 +59,7 @@ extern RTC_HandleTypeDef hrtc;
 
 extern QueueHandle_t queue_lcd;
 
-//extern char* lcdDisplayStr[2];
+State_e systemState = State_Normal;
 /* USER CODE END Variables */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -69,13 +69,20 @@ void Task_Rtc(void *param) {
 	char *date;
 	char *time;
 	while (1) {
-		date = rtc_get_date();
-		time = rtc_get_time();
-		rtcSender = pvPortMalloc(sizeof(LcdDisplayData_t));
-		rtcSender->line[0] = &date;
-		rtcSender->line[1] = &time;
-		xQueueSend(queue_lcd, &rtcSender, portMAX_DELAY);
-		vTaskDelay(50);
+		switch (systemState) {
+			case State_Normal:
+				date = rtc_get_date();
+				time = rtc_get_time();
+				rtcSender = pvPortMalloc(sizeof(LcdDisplayData_t));
+				rtcSender->line[0] = &date;
+				rtcSender->line[1] = &time;
+				xQueueSend(queue_lcd, &rtcSender, portMAX_DELAY);
+				vTaskDelay(50);
+				break;
+			default:
+				break;
+		}
+
 	}
 }
 
@@ -102,7 +109,7 @@ void Task_Lcd(void *param) {
 		lcd16x2_i2c_setCursor(1, 0);
 		lcd16x2_i2c_printf(*(rtcReceiver->line[1]));
 		vPortFree(rtcReceiver);
-		vTaskDelay(1);
+		vTaskDelay(50);
 	}
 }
 
