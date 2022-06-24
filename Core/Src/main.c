@@ -131,12 +131,12 @@ int main(void) {
 	MX_DMA_Init();
 	MX_ADC1_Init();
 	MX_I2C1_Init();
-//  MX_IWDG_Init();
-//  MX_RNG_Init();
+//	MX_IWDG_Init();
+//	MX_RNG_Init();
 	MX_RTC_Init();
 	MX_TIM1_Init();
-//  MX_USB_OTG_FS_PCD_Init();
-//  MX_WWDG_Init();
+	MX_USB_OTG_FS_PCD_Init();
+//	MX_WWDG_Init();
 	/* USER CODE BEGIN 2 */
 
 	/* USER CODE END 2 */
@@ -169,7 +169,8 @@ int main(void) {
 
 	/* USER CODE BEGIN RTOS_THREADS */
 	/* add threads, ... */
-	status = xTaskCreate(Task_StateController, "StateController task", 250, NULL, 3, &task_stateControl);
+	status = xTaskCreate(Task_StateController, "StateController task", 250,
+	NULL, 3, &task_stateControl);
 	configASSERT(status == pdPASS);
 	status = xTaskCreate(Task_Lcd, "lcd task", 250, NULL, 3, &task_lcd);
 	configASSERT(status == pdPASS);
@@ -681,19 +682,22 @@ static void MX_GPIO_Init(void) {
 	GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
 	GPIO_InitStruct.Pull = GPIO_NOPULL;
 	HAL_GPIO_Init(USER_Btn_GPIO_Port, &GPIO_InitStruct);
-	HAL_NVIC_SetPriority(EXTI15_10_IRQn, 5, 0);
-	HAL_NVIC_EnableIRQ(EXTI15_10_IRQn);
 
 	/*Configure GPIO pins : PF0 PF1 PF2 PF3
-	 PF4 PF5 PF6 PF7
-	 PF8 PF9 PF10 PF11
-	 PF12 PF13 PF14 PF15 */
+	 PF4 PF5 PF6 PF10
+	 PF11 PF12 PF13 PF14
+	 PF15 */
 	GPIO_InitStruct.Pin = GPIO_PIN_0 | GPIO_PIN_1 | GPIO_PIN_2 | GPIO_PIN_3
-			| GPIO_PIN_4 | GPIO_PIN_5 | GPIO_PIN_6 | GPIO_PIN_7 | GPIO_PIN_8
-			| GPIO_PIN_9 | GPIO_PIN_10 | GPIO_PIN_11 | GPIO_PIN_12 | GPIO_PIN_13
-			| GPIO_PIN_14 | GPIO_PIN_15;
+			| GPIO_PIN_4 | GPIO_PIN_5 | GPIO_PIN_6 | GPIO_PIN_10 | GPIO_PIN_11
+			| GPIO_PIN_12 | GPIO_PIN_13 | GPIO_PIN_14 | GPIO_PIN_15;
 	GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
 	GPIO_InitStruct.Pull = GPIO_NOPULL;
+	HAL_GPIO_Init(GPIOF, &GPIO_InitStruct);
+
+	/*Configure GPIO pins : KEY_R1_Pin KEY_R2_Pin KEY_L2_Pin */
+	GPIO_InitStruct.Pin = KEY_R1_Pin | KEY_R2_Pin | KEY_L2_Pin;
+	GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+	GPIO_InitStruct.Pull = GPIO_PULLDOWN;
 	HAL_GPIO_Init(GPIOF, &GPIO_InitStruct);
 
 	/*Configure GPIO pins : PC0 PC2 PC3 PC6
@@ -738,23 +742,28 @@ static void MX_GPIO_Init(void) {
 	HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
 	/*Configure GPIO pins : PB1 PB2 PB10 PB11
-	 PB12 PB15 PB4 PB5
-	 PB6 */
+	 PB12 PB15 PB5 PB6 */
 	GPIO_InitStruct.Pin = GPIO_PIN_1 | GPIO_PIN_2 | GPIO_PIN_10 | GPIO_PIN_11
-			| GPIO_PIN_12 | GPIO_PIN_15 | GPIO_PIN_4 | GPIO_PIN_5 | GPIO_PIN_6;
+			| GPIO_PIN_12 | GPIO_PIN_15 | GPIO_PIN_5 | GPIO_PIN_6;
 	GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
 	GPIO_InitStruct.Pull = GPIO_NOPULL;
 	HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
-	/*Configure GPIO pins : PG0 PG1 PG2 PG3
-	 PG4 PG5 PG8 PG9
-	 PG10 PG12 PG14 PG15 */
-	GPIO_InitStruct.Pin = GPIO_PIN_0 | GPIO_PIN_1 | GPIO_PIN_2 | GPIO_PIN_3
-			| GPIO_PIN_4 | GPIO_PIN_5 | GPIO_PIN_8 | GPIO_PIN_9 | GPIO_PIN_10
-			| GPIO_PIN_12 | GPIO_PIN_14 | GPIO_PIN_15;
+	/*Configure GPIO pins : PG0 PG2 PG3 PG4
+	 PG5 PG8 PG9 PG10
+	 PG12 PG14 PG15 */
+	GPIO_InitStruct.Pin = GPIO_PIN_0 | GPIO_PIN_2 | GPIO_PIN_3 | GPIO_PIN_4
+			| GPIO_PIN_5 | GPIO_PIN_8 | GPIO_PIN_9 | GPIO_PIN_10 | GPIO_PIN_12
+			| GPIO_PIN_14 | GPIO_PIN_15;
 	GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
 	GPIO_InitStruct.Pull = GPIO_NOPULL;
 	HAL_GPIO_Init(GPIOG, &GPIO_InitStruct);
+
+	/*Configure GPIO pin : KEY_L1_Pin */
+	GPIO_InitStruct.Pin = KEY_L1_Pin;
+	GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+	GPIO_InitStruct.Pull = GPIO_PULLDOWN;
+	HAL_GPIO_Init(KEY_L1_GPIO_Port, &GPIO_InitStruct);
 
 	/*Configure GPIO pin : RMII_TXD1_Pin */
 	GPIO_InitStruct.Pin = RMII_TXD1_Pin;
@@ -796,6 +805,12 @@ static void MX_GPIO_Init(void) {
 	GPIO_InitStruct.Alternate = GPIO_AF11_ETH;
 	HAL_GPIO_Init(GPIOG, &GPIO_InitStruct);
 
+	/*Configure GPIO pin : PB4 */
+	GPIO_InitStruct.Pin = GPIO_PIN_4;
+	GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+	GPIO_InitStruct.Pull = GPIO_NOPULL;
+	HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+
 }
 
 /* USER CODE BEGIN 4 */
@@ -807,13 +822,13 @@ static void MX_GPIO_Init(void) {
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
 
 	switch (GPIO_Pin) {
-	case USER_Btn_Pin:;
+	case USER_Btn_Pin:
+		;
 		BaseType_t xHigherPriorityTaskWoken;
-		xTaskNotifyFromISR(task_stateControl,
-							   0,
-							   eNoAction,
-							   &xHigherPriorityTaskWoken );
-		portYIELD_FROM_ISR( xHigherPriorityTaskWoken );
+		xTaskNotifyFromISR(task_stateControl, 0, eNoAction,
+				&xHigherPriorityTaskWoken);
+		portYIELD_FROM_ISR(xHigherPriorityTaskWoken)
+		;
 		break;
 	default:
 		break;

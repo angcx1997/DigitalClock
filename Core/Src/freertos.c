@@ -130,13 +130,20 @@ void Task_Lcd(void *param) {
 	lcd16x2_i2c_clear();
 	while (1) {
 		xQueueReceive(queue_lcd, &rtcReceiver, portMAX_DELAY);
-		lcd16x2_i2c_clear();
 		lcd16x2_i2c_setCursor(0, 0);
 		lcd16x2_i2c_printf(*(rtcReceiver->line[0]));
 		vTaskDelay(1);
 		lcd16x2_i2c_setCursor(1, 0);
 		lcd16x2_i2c_printf(*(rtcReceiver->line[1]));
 		vPortFree(rtcReceiver);
+		switch (systemState) {
+			case State_Configure_Time_HH:
+				lcd16x2_i2c_setCursor(0, 0);
+				lcd16x2_i2c_printf("  ");
+				break;
+			default:
+				break;
+		}
 		vTaskDelay(50);
 	}
 }
