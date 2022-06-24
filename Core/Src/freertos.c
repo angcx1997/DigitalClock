@@ -69,6 +69,7 @@ extern RTC_HandleTypeDef hrtc;
 extern TaskHandle_t task_rtc;
 extern TaskHandle_t task_lcd;
 extern TaskHandle_t task_stateControl;
+extern TaskHandle_t task_interface;
 
 extern QueueHandle_t queue_lcd;
 
@@ -145,6 +146,12 @@ void Task_Lcd(void *param) {
 				break;
 		}
 		vTaskDelay(50);
+	}
+}
+
+void Task_Interface(void* param){
+	while(1){
+
 	}
 }
 

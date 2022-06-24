@@ -59,6 +59,7 @@ void Error_Handler(void);
 void Task_Rtc(void* param);
 void Task_Lcd(void* param);
 void Task_StateController(void* param);
+void Task_Interface(void* param);
 
 /* USER CODE END EFP */
 

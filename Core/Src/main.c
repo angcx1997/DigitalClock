@@ -70,6 +70,8 @@ const osThreadAttr_t defaultTask_attributes = { .name = "defaultTask",
 TaskHandle_t task_rtc;
 TaskHandle_t task_lcd;
 TaskHandle_t task_stateControl;
+TaskHandle_t task_interface;
+
 QueueHandle_t queue_lcd;
 
 volatile uint8_t button_input = 0;
@@ -175,6 +177,8 @@ int main(void) {
 	status = xTaskCreate(Task_Lcd, "lcd task", 250, NULL, 3, &task_lcd);
 	configASSERT(status == pdPASS);
 	status = xTaskCreate(Task_Rtc, "rtc_task", 250, NULL, 3, &task_rtc);
+	configASSERT(status == pdPASS);
+	status = xTaskCreate(Task_Interface, "interface_task", 250, NULL, 3, &task_interface);
 	configASSERT(status == pdPASS);
 	/* USER CODE END RTOS_THREADS */
 
