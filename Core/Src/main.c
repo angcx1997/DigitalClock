@@ -178,7 +178,8 @@ int main(void) {
 	configASSERT(status == pdPASS);
 	status = xTaskCreate(Task_Rtc, "rtc_task", 250, NULL, 3, &task_rtc);
 	configASSERT(status == pdPASS);
-	status = xTaskCreate(Task_Interface, "interface_task", 250, NULL, 3, &task_interface);
+	status = xTaskCreate(Task_Interface, "interface_task", 250, NULL, 3,
+			&task_interface);
 	configASSERT(status == pdPASS);
 	/* USER CODE END RTOS_THREADS */
 
@@ -664,6 +665,9 @@ static void MX_GPIO_Init(void) {
 	__HAL_RCC_GPIOD_CLK_ENABLE();
 
 	/*Configure GPIO pin Output Level */
+	HAL_GPIO_WritePin(GPIOF, KEY_R1_Pin | KEY_R2_Pin, GPIO_PIN_RESET);
+
+	/*Configure GPIO pin Output Level */
 	HAL_GPIO_WritePin(GPIOB, LD1_Pin | LD3_Pin | LD2_Pin, GPIO_PIN_RESET);
 
 	/*Configure GPIO pin Output Level */
@@ -698,11 +702,18 @@ static void MX_GPIO_Init(void) {
 	GPIO_InitStruct.Pull = GPIO_NOPULL;
 	HAL_GPIO_Init(GPIOF, &GPIO_InitStruct);
 
-	/*Configure GPIO pins : KEY_R1_Pin KEY_R2_Pin KEY_L2_Pin */
-	GPIO_InitStruct.Pin = KEY_R1_Pin | KEY_R2_Pin | KEY_L2_Pin;
-	GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
-	GPIO_InitStruct.Pull = GPIO_PULLDOWN;
+	/*Configure GPIO pins : KEY_R1_Pin KEY_R2_Pin */
+	GPIO_InitStruct.Pin = KEY_R1_Pin | KEY_R2_Pin;
+	GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+	GPIO_InitStruct.Pull = GPIO_NOPULL;
+	GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
 	HAL_GPIO_Init(GPIOF, &GPIO_InitStruct);
+
+	/*Configure GPIO pin : KEY_L2_Pin */
+	GPIO_InitStruct.Pin = KEY_L2_Pin;
+	GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+	GPIO_InitStruct.Pull = GPIO_NOPULL;
+	HAL_GPIO_Init(KEY_L2_GPIO_Port, &GPIO_InitStruct);
 
 	/*Configure GPIO pins : PC0 PC2 PC3 PC6
 	 PC7 PC8 PC9 PC10
