@@ -238,50 +238,6 @@ void HAL_I2C_MspDeInit(I2C_HandleTypeDef* hi2c)
 }
 
 /**
-* @brief RNG MSP Initialization
-* This function configures the hardware resources used in this example
-* @param hrng: RNG handle pointer
-* @retval None
-*/
-void HAL_RNG_MspInit(RNG_HandleTypeDef* hrng)
-{
-  if(hrng->Instance==RNG)
-  {
-  /* USER CODE BEGIN RNG_MspInit 0 */
-
-  /* USER CODE END RNG_MspInit 0 */
-    /* Peripheral clock enable */
-    __HAL_RCC_RNG_CLK_ENABLE();
-  /* USER CODE BEGIN RNG_MspInit 1 */
-
-  /* USER CODE END RNG_MspInit 1 */
-  }
-
-}
-
-/**
-* @brief RNG MSP De-Initialization
-* This function freeze the hardware resources used in this example
-* @param hrng: RNG handle pointer
-* @retval None
-*/
-void HAL_RNG_MspDeInit(RNG_HandleTypeDef* hrng)
-{
-  if(hrng->Instance==RNG)
-  {
-  /* USER CODE BEGIN RNG_MspDeInit 0 */
-
-  /* USER CODE END RNG_MspDeInit 0 */
-    /* Peripheral clock disable */
-    __HAL_RCC_RNG_CLK_DISABLE();
-  /* USER CODE BEGIN RNG_MspDeInit 1 */
-
-  /* USER CODE END RNG_MspDeInit 1 */
-  }
-
-}
-
-/**
 * @brief RTC MSP Initialization
 * This function configures the hardware resources used in this example
 * @param hrtc: RTC handle pointer
@@ -553,31 +509,6 @@ void HAL_PCD_MspDeInit(PCD_HandleTypeDef* hpcd)
   /* USER CODE BEGIN USB_OTG_FS_MspDeInit 1 */
 
   /* USER CODE END USB_OTG_FS_MspDeInit 1 */
-  }
-
-}
-
-/**
-* @brief WWDG MSP Initialization
-* This function configures the hardware resources used in this example
-* @param hwwdg: WWDG handle pointer
-* @retval None
-*/
-void HAL_WWDG_MspInit(WWDG_HandleTypeDef* hwwdg)
-{
-  if(hwwdg->Instance==WWDG)
-  {
-  /* USER CODE BEGIN WWDG_MspInit 0 */
-
-  /* USER CODE END WWDG_MspInit 0 */
-    /* Peripheral clock enable */
-    __HAL_RCC_WWDG_CLK_ENABLE();
-    /* WWDG interrupt Init */
-    HAL_NVIC_SetPriority(WWDG_IRQn, 5, 0);
-    HAL_NVIC_EnableIRQ(WWDG_IRQn);
-  /* USER CODE BEGIN WWDG_MspInit 1 */
-
-  /* USER CODE END WWDG_MspInit 1 */
   }
 
 }
