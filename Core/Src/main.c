@@ -48,10 +48,6 @@ DMA_HandleTypeDef hdma_adc1;
 
 I2C_HandleTypeDef hi2c1;
 
-IWDG_HandleTypeDef hiwdg;
-
-RNG_HandleTypeDef hrng;
-
 RTC_HandleTypeDef hrtc;
 
 TIM_HandleTypeDef htim1;
@@ -59,8 +55,6 @@ TIM_HandleTypeDef htim1;
 UART_HandleTypeDef huart3;
 
 PCD_HandleTypeDef hpcd_USB_OTG_FS;
-
-WWDG_HandleTypeDef hwwdg;
 
 /* Definitions for defaultTask */
 osThreadId_t defaultTaskHandle;
@@ -84,12 +78,9 @@ static void MX_USART3_UART_Init(void);
 static void MX_DMA_Init(void);
 static void MX_ADC1_Init(void);
 static void MX_I2C1_Init(void);
-static void MX_IWDG_Init(void);
-static void MX_RNG_Init(void);
 static void MX_RTC_Init(void);
 static void MX_TIM1_Init(void);
 static void MX_USB_OTG_FS_PCD_Init(void);
-static void MX_WWDG_Init(void);
 void StartDefaultTask(void *argument);
 
 /* USER CODE BEGIN PFP */
@@ -133,12 +124,9 @@ int main(void) {
 	MX_DMA_Init();
 	MX_ADC1_Init();
 	MX_I2C1_Init();
-//	MX_IWDG_Init();
-//	MX_RNG_Init();
 	MX_RTC_Init();
 	MX_TIM1_Init();
 	MX_USB_OTG_FS_PCD_Init();
-//	MX_WWDG_Init();
 	/* USER CODE BEGIN 2 */
 
 	/* USER CODE END 2 */
@@ -331,56 +319,6 @@ static void MX_I2C1_Init(void) {
 	/* USER CODE BEGIN I2C1_Init 2 */
 
 	/* USER CODE END I2C1_Init 2 */
-
-}
-
-/**
- * @brief IWDG Initialization Function
- * @param None
- * @retval None
- */
-static void MX_IWDG_Init(void) {
-
-	/* USER CODE BEGIN IWDG_Init 0 */
-
-	/* USER CODE END IWDG_Init 0 */
-
-	/* USER CODE BEGIN IWDG_Init 1 */
-
-	/* USER CODE END IWDG_Init 1 */
-	hiwdg.Instance = IWDG;
-	hiwdg.Init.Prescaler = IWDG_PRESCALER_4;
-	hiwdg.Init.Reload = 4095;
-	if (HAL_IWDG_Init(&hiwdg) != HAL_OK) {
-		Error_Handler();
-	}
-	/* USER CODE BEGIN IWDG_Init 2 */
-
-	/* USER CODE END IWDG_Init 2 */
-
-}
-
-/**
- * @brief RNG Initialization Function
- * @param None
- * @retval None
- */
-static void MX_RNG_Init(void) {
-
-	/* USER CODE BEGIN RNG_Init 0 */
-
-	/* USER CODE END RNG_Init 0 */
-
-	/* USER CODE BEGIN RNG_Init 1 */
-
-	/* USER CODE END RNG_Init 1 */
-	hrng.Instance = RNG;
-	if (HAL_RNG_Init(&hrng) != HAL_OK) {
-		Error_Handler();
-	}
-	/* USER CODE BEGIN RNG_Init 2 */
-
-	/* USER CODE END RNG_Init 2 */
 
 }
 
@@ -600,34 +538,6 @@ static void MX_USB_OTG_FS_PCD_Init(void) {
 	/* USER CODE BEGIN USB_OTG_FS_Init 2 */
 
 	/* USER CODE END USB_OTG_FS_Init 2 */
-
-}
-
-/**
- * @brief WWDG Initialization Function
- * @param None
- * @retval None
- */
-static void MX_WWDG_Init(void) {
-
-	/* USER CODE BEGIN WWDG_Init 0 */
-
-	/* USER CODE END WWDG_Init 0 */
-
-	/* USER CODE BEGIN WWDG_Init 1 */
-
-	/* USER CODE END WWDG_Init 1 */
-	hwwdg.Instance = WWDG;
-	hwwdg.Init.Prescaler = WWDG_PRESCALER_1;
-	hwwdg.Init.Window = 64;
-	hwwdg.Init.Counter = 64;
-	hwwdg.Init.EWIMode = WWDG_EWI_DISABLE;
-	if (HAL_WWDG_Init(&hwwdg) != HAL_OK) {
-		Error_Handler();
-	}
-	/* USER CODE BEGIN WWDG_Init 2 */
-
-	/* USER CODE END WWDG_Init 2 */
 
 }
 

@@ -59,7 +59,6 @@
 extern DMA_HandleTypeDef hdma_adc1;
 extern ADC_HandleTypeDef hadc1;
 extern RTC_HandleTypeDef hrtc;
-extern WWDG_HandleTypeDef hwwdg;
 extern TIM_HandleTypeDef htim6;
 
 /* USER CODE BEGIN EV */
