@@ -28,6 +28,7 @@
 #include <stdio.h>
 #include <queue.h>
 #include <limits.h>
+#include <string.h>
 #include "rtc.h"
 #include "i2c_lcd.h"
 /* USER CODE END Includes */
@@ -47,8 +48,9 @@ typedef enum {
 } State_e;
 
 typedef struct {
-	char **line[2];
-} LcdDisplayData_t;
+	RTC_DateTypeDef *date;
+	RTC_TimeTypeDef *time;
+} RTC_DateTime_t;
 
 /* USER CODE END PTD */
 
@@ -114,18 +116,24 @@ void Task_StateController(void *param) {
 }
 
 void Task_Rtc(void *param) {
-	LcdDisplayData_t *rtcSender;
-	char *date;
-	char *time;
+	RTC_DateTime_t *dateTimeSender;
+	RTC_DateTypeDef rtc_date;
+	RTC_TimeTypeDef rtc_time;
+	memset(&rtc_date, 0, sizeof(rtc_date));
+	memset(&rtc_time, 0, sizeof(rtc_time));
+
 	uint32_t ulNotifiedValue;
 	while (1) {
-		date = rtc_get_date();
-		time = rtc_get_time();
-		rtcSender = pvPortMalloc(sizeof(LcdDisplayData_t));
-		rtcSender->line[0] = &date;
-		rtcSender->line[1] = &time;
-		xQueueSend(queue_lcd, &rtcSender, portMAX_DELAY);
+		//Get RTC current date and time
+		HAL_RTC_GetTime(&hrtc, &rtc_time, RTC_FORMAT_BIN);
+		HAL_RTC_GetDate(&hrtc, &rtc_date, RTC_FORMAT_BIN);
+
+		dateTimeSender = pvPortMalloc(sizeof(RTC_DateTime_t));
+		dateTimeSender->date = &rtc_date;
+		dateTimeSender->time = &rtc_time;
+		xQueueSend(queue_lcd, &dateTimeSender, portMAX_DELAY);
 		vTaskDelay(50);
+
 #if 0
 		switch (systemState) {
 		case State_Normal:
@@ -148,7 +156,8 @@ void Task_Rtc(void *param) {
 }
 
 void Task_Lcd(void *param) {
-	LcdDisplayData_t *rtcReceiver;
+//	LcdDisplayData_t *rtcReceiver;
+	RTC_DateTime_t *rtcReceiver;
 	uint8_t blink = 0;
 
 	if (lcd16x2_i2c_init(&hi2c1) == false) {
@@ -164,17 +173,21 @@ void Task_Lcd(void *param) {
 	lcd16x2_i2c_clear();
 	while (1) {
 		xQueueReceive(queue_lcd, &rtcReceiver, portMAX_DELAY);
+		char *format;
+		format = (rtcReceiver->time->TimeFormat == RTC_HOURFORMAT12_AM) ? "AM" : "PM";
 		lcd16x2_i2c_setCursor(0, 0);
-		lcd16x2_i2c_printf(*(rtcReceiver->line[0]));
+		lcd16x2_i2c_printf("%02d-%02d-%2d", rtcReceiver->date->Month, rtcReceiver->date->Date, 2000 + rtcReceiver->date->Year);
 		vTaskDelay(1);
 		lcd16x2_i2c_setCursor(1, 0);
-		lcd16x2_i2c_printf(*(rtcReceiver->line[1]));
+		lcd16x2_i2c_printf("%02d:%02d:%02d [%s]", rtcReceiver->time->Hours, rtcReceiver->time->Minutes, rtcReceiver->time->Seconds, format);
 		vPortFree(rtcReceiver);
 		switch (systemState) {
 		case State_Configure_Time_HH:
-			if (blink ^= 1){
+			if (blink ^= 1) {
 				lcd16x2_i2c_setCursor(0, 0);
-				lcd16x2_i2c_printf("  ");
+				for (int i = 0; i < 2; i++) {
+					lcd16x2_i2c_printf(" ");
+				}
 			}
 			vTaskDelay(1000);
 			break;
