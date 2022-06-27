@@ -85,12 +85,19 @@ uint8_t keyInput;
 /* Private application code --------------------------------------------------*/
 /* USER CODE BEGIN Application */
 void Task_StateController(void *param) {
+	BaseType_t notifiedValue;
 	while (1) {
-		if (xTaskNotifyWait(0x00, UINT_MAX, (uint32_t*) NULL,
+		if (xTaskNotifyWait(0x00, UINT_MAX, &notifiedValue,
 		portMAX_DELAY) == pdTRUE) {
 			//Delay added for debouncing
-			vTaskDelay(50);
-			systemState++;
+			vTaskDelay(100);
+			if(notifiedValue == 'U'){
+				systemState--;
+			}
+			if(notifiedValue == 'D'){
+				systemState++;
+			}
+
 			if (systemState == State_End) {
 				systemState = State_Normal;
 			}
@@ -188,6 +195,8 @@ void Task_Interface(void *param) {
 		}
 
 		keyInput = tmp; //D: down, U: up, I: in, O: out
+		xTaskNotify(task_stateControl, keyInput,eSetValueWithOverwrite);
+
 	}
 }
 /* USER CODE END Application */
