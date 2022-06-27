@@ -74,10 +74,15 @@ extern TaskHandle_t task_interface;
 extern QueueHandle_t queue_lcd;
 
 State_e systemState = State_Normal;
+
 /* USER CODE END Variables */
 
 /* Private function prototypes -----------------------------------------------*/
 /* USER CODE BEGIN FunctionPrototypes */
+/* USER CODE END FunctionPrototypes */
+
+/* Private application code --------------------------------------------------*/
+/* USER CODE BEGIN Application */
 void Task_StateController(void* param){
 	while(1){
 		if (xTaskNotifyWait(0x00, UINT_MAX, (uint32_t*)NULL, portMAX_DELAY) == pdTRUE){
@@ -154,12 +159,6 @@ void Task_Interface(void* param){
 
 	}
 }
-
-/* USER CODE END FunctionPrototypes */
-
-/* Private application code --------------------------------------------------*/
-/* USER CODE BEGIN Application */
-
 /* USER CODE END Application */
 
 /************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/
