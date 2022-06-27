@@ -165,12 +165,12 @@ void Task_Interface(void *param) {
 
 		if ((HAL_GPIO_ReadPin(KEY_L1_GPIO_Port, KEY_L1_Pin)))   // if the Col 1 is low
 		{
-			tmp = '3';
+			tmp = 'D';
 		}
 
 		if ((HAL_GPIO_ReadPin(KEY_L2_GPIO_Port, KEY_L2_Pin)))   // if the Col 2 is low
 		{
-			tmp ='4';
+			tmp ='I';
 		}
 
 		/* Make ROW 2 LOW and all other ROWs HIGH */
@@ -179,15 +179,15 @@ void Task_Interface(void *param) {
 
 		if ((HAL_GPIO_ReadPin(KEY_L1_GPIO_Port, KEY_L1_Pin)))   // if the Col 1 is low
 		{
-			tmp = '1';
+			tmp = 'U';
 		}
 
 		if ((HAL_GPIO_ReadPin(KEY_L2_GPIO_Port, KEY_L2_Pin)))   // if the Col 2 is low
 		{
-			tmp ='2';
+			tmp ='O';
 		}
 
-		keyInput = tmp;
+		keyInput = tmp; //D: down, U: up, I: in, O: out
 	}
 }
 /* USER CODE END Application */
