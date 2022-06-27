@@ -38,7 +38,7 @@ typedef enum {
 	State_Normal = 0x00,
 //	State_Menu = 0x02,
 	State_Configure_Date_DD,
-	State_Configure_DATE_MM,
+	State_Configure_Date_MM,
 	State_Configure_Date_YY,
 	State_Configure_Time_HH,
 	State_Configure_Time_MM,
@@ -49,6 +49,7 @@ typedef enum {
 typedef struct {
 	char **line[2];
 } LcdDisplayData_t;
+
 /* USER CODE END PTD */
 
 /* Private define ------------------------------------------------------------*/
@@ -74,33 +75,39 @@ extern TaskHandle_t task_interface;
 extern QueueHandle_t queue_lcd;
 
 State_e systemState = State_Normal;
-
+State_e tmpState = State_Normal;
 uint8_t keyInput;
 /* USER CODE END Variables */
 
 /* Private function prototypes -----------------------------------------------*/
 /* USER CODE BEGIN FunctionPrototypes */
+
 /* USER CODE END FunctionPrototypes */
 
 /* Private application code --------------------------------------------------*/
 /* USER CODE BEGIN Application */
 void Task_StateController(void *param) {
 	BaseType_t notifiedValue;
+
 	while (1) {
 		if (xTaskNotifyWait(0x00, UINT_MAX, &notifiedValue,
 		portMAX_DELAY) == pdTRUE) {
 			//Delay added for debouncing
-			vTaskDelay(100);
-			if(notifiedValue == 'U'){
+			vTaskDelay(pdMS_TO_TICKS(200));
+
+			if (notifiedValue == 'U') {
 				systemState--;
-			}
-			if(notifiedValue == 'D'){
+				if (systemState > UINT8_MAX - 1) //Check if overflow happens
+					systemState = State_Configure_Time_SS;
+			} else if (notifiedValue == 'D') {
 				systemState++;
 			}
 
 			if (systemState == State_End) {
 				systemState = State_Normal;
 			}
+			xTaskNotify(task_rtc, systemState, eSetValueWithOverwrite);
+
 		}
 	}
 
@@ -112,6 +119,14 @@ void Task_Rtc(void *param) {
 	char *time;
 	uint32_t ulNotifiedValue;
 	while (1) {
+		date = rtc_get_date();
+		time = rtc_get_time();
+		rtcSender = pvPortMalloc(sizeof(LcdDisplayData_t));
+		rtcSender->line[0] = &date;
+		rtcSender->line[1] = &time;
+		xQueueSend(queue_lcd, &rtcSender, portMAX_DELAY);
+		vTaskDelay(50);
+#if 0
 		switch (systemState) {
 		case State_Normal:
 			date = rtc_get_date();
@@ -122,15 +137,19 @@ void Task_Rtc(void *param) {
 			xQueueSend(queue_lcd, &rtcSender, portMAX_DELAY);
 			vTaskDelay(50);
 			break;
+//		case State_Configure_Date_DD:
+//			rtcSender->line[0] = &date;
+//
 		default:
 			break;
 		}
-
+#endif
 	}
 }
 
 void Task_Lcd(void *param) {
 	LcdDisplayData_t *rtcReceiver;
+	uint8_t blink = 0;
 
 	if (lcd16x2_i2c_init(&hi2c1) == false) {
 		Error_Handler();
@@ -153,13 +172,17 @@ void Task_Lcd(void *param) {
 		vPortFree(rtcReceiver);
 		switch (systemState) {
 		case State_Configure_Time_HH:
-			lcd16x2_i2c_setCursor(0, 0);
-			lcd16x2_i2c_printf("  ");
+			if (blink ^= 1){
+				lcd16x2_i2c_setCursor(0, 0);
+				lcd16x2_i2c_printf("  ");
+			}
+			vTaskDelay(1000);
 			break;
 		default:
+			vTaskDelay(50);
 			break;
 		}
-		vTaskDelay(50);
+
 	}
 }
 
@@ -177,7 +200,7 @@ void Task_Interface(void *param) {
 
 		if ((HAL_GPIO_ReadPin(KEY_L2_GPIO_Port, KEY_L2_Pin)))   // if the Col 2 is low
 		{
-			tmp ='I';
+			tmp = 'O';
 		}
 
 		/* Make ROW 2 LOW and all other ROWs HIGH */
@@ -191,11 +214,11 @@ void Task_Interface(void *param) {
 
 		if ((HAL_GPIO_ReadPin(KEY_L2_GPIO_Port, KEY_L2_Pin)))   // if the Col 2 is low
 		{
-			tmp ='O';
+			tmp = 'I';
 		}
 
 		keyInput = tmp; //D: down, U: up, I: in, O: out
-		xTaskNotify(task_stateControl, keyInput,eSetValueWithOverwrite);
+		xTaskNotify(task_stateControl, keyInput, eSetValueWithOverwrite);
 
 	}
 }
