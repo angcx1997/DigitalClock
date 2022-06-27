@@ -75,7 +75,7 @@ extern QueueHandle_t queue_lcd;
 
 State_e systemState = State_Normal;
 
-uint8_t key;
+uint8_t keyInput;
 /* USER CODE END Variables */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -158,38 +158,36 @@ void Task_Lcd(void *param) {
 
 void Task_Interface(void *param) {
 	while (1) {
+		char tmp = 0;
 		/* Make ROW 1 LOW and all other ROWs HIGH */
 		HAL_GPIO_WritePin(KEY_R1_GPIO_Port, KEY_R1_Pin, GPIO_PIN_RESET);  //Pull the R1 low
 		HAL_GPIO_WritePin(KEY_R2_GPIO_Port, KEY_R2_Pin, GPIO_PIN_SET);  // Pull the R2 High
 
-		if (!(HAL_GPIO_ReadPin(KEY_L1_GPIO_Port, KEY_L1_Pin)))   // if the Col 1 is low
+		if ((HAL_GPIO_ReadPin(KEY_L1_GPIO_Port, KEY_L1_Pin)))   // if the Col 1 is low
 		{
-			while (!(HAL_GPIO_ReadPin(KEY_L1_GPIO_Port, KEY_L1_Pin)));   // wait till the button is pressed
-			key = '1';
+			tmp = '3';
 		}
 
-		if (!(HAL_GPIO_ReadPin(KEY_L2_GPIO_Port, KEY_L2_Pin)))   // if the Col 2 is low
+		if ((HAL_GPIO_ReadPin(KEY_L2_GPIO_Port, KEY_L2_Pin)))   // if the Col 2 is low
 		{
-			while (!(HAL_GPIO_ReadPin(KEY_L2_GPIO_Port, KEY_L2_Pin)));   // wait till the button is pressed
-			key ='2';
+			tmp ='4';
 		}
 
 		/* Make ROW 2 LOW and all other ROWs HIGH */
 		HAL_GPIO_WritePin(KEY_R1_GPIO_Port, KEY_R1_Pin, GPIO_PIN_SET);  //Pull the R1 high
 		HAL_GPIO_WritePin(KEY_R2_GPIO_Port, KEY_R2_Pin, GPIO_PIN_RESET);  // Pull the R2 low
 
-		if (!(HAL_GPIO_ReadPin(KEY_L1_GPIO_Port, KEY_L1_Pin)))   // if the Col 1 is low
+		if ((HAL_GPIO_ReadPin(KEY_L1_GPIO_Port, KEY_L1_Pin)))   // if the Col 1 is low
 		{
-			while (!(HAL_GPIO_ReadPin(KEY_L1_GPIO_Port, KEY_L1_Pin)));   // wait till the button is pressed
-			key = '3';
+			tmp = '1';
 		}
 
-		if (!(HAL_GPIO_ReadPin(KEY_L2_GPIO_Port, KEY_L2_Pin)))   // if the Col 2 is low
+		if ((HAL_GPIO_ReadPin(KEY_L2_GPIO_Port, KEY_L2_Pin)))   // if the Col 2 is low
 		{
-			while (!(HAL_GPIO_ReadPin(KEY_L2_GPIO_Port, KEY_L2_Pin)));   // wait till the button is pressed
-			key ='4';
+			tmp ='2';
 		}
 
+		keyInput = tmp;
 	}
 }
 /* USER CODE END Application */

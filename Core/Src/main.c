@@ -647,7 +647,7 @@ static void MX_GPIO_Init(void)
   /*Configure GPIO pin : KEY_L2_Pin */
   GPIO_InitStruct.Pin = KEY_L2_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Pull = GPIO_PULLDOWN;
   HAL_GPIO_Init(KEY_L2_GPIO_Port, &GPIO_InitStruct);
 
   /*Configure GPIO pins : PC0 PC2 PC3 PC6
