@@ -44,6 +44,7 @@ typedef enum {
 	State_Configure_Time_HH,
 	State_Configure_Time_MM,
 	State_Configure_Time_SS,
+	State_Configure_Time_FORMAT,
 	State_End,
 } State_e;
 
@@ -52,11 +53,23 @@ typedef struct {
 	RTC_TimeTypeDef *time;
 } RTC_DateTime_t;
 
+typedef struct {
+	uint8_t row;
+	uint8_t col;
+} CursorPos_t;
 /* USER CODE END PTD */
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-
+#define CURSOR_ROW_DATE 0
+#define CURSOR_ROW_TIME 1
+#define CURSOR_DATE_DD 0
+#define CURSOR_DATE_MM 3
+#define CURSOR_DATE_YY 6
+#define CURSOR_TIME_HH 0
+#define CURSOR_TIME_MM 3
+#define CURSOR_TIME_SS 6
+#define CURSOR_TIME_FORMAT 10
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -100,7 +113,7 @@ void Task_StateController(void *param) {
 			if (notifiedValue == 'U') {
 				systemState--;
 				if (systemState > UINT8_MAX - 1) //Check if overflow happens
-					systemState = State_Configure_Time_SS;
+					systemState = State_Configure_Time_FORMAT;
 			} else if (notifiedValue == 'D') {
 				systemState++;
 			}
@@ -125,33 +138,25 @@ void Task_Rtc(void *param) {
 	uint32_t ulNotifiedValue;
 	while (1) {
 		//Get RTC current date and time
-		HAL_RTC_GetTime(&hrtc, &rtc_time, RTC_FORMAT_BIN);
-		HAL_RTC_GetDate(&hrtc, &rtc_date, RTC_FORMAT_BIN);
 
-		dateTimeSender = pvPortMalloc(sizeof(RTC_DateTime_t));
-		dateTimeSender->date = &rtc_date;
-		dateTimeSender->time = &rtc_time;
-		xQueueSend(queue_lcd, &dateTimeSender, portMAX_DELAY);
-		vTaskDelay(50);
-
-#if 0
 		switch (systemState) {
 		case State_Normal:
-			date = rtc_get_date();
-			time = rtc_get_time();
-			rtcSender = pvPortMalloc(sizeof(LcdDisplayData_t));
-			rtcSender->line[0] = &date;
-			rtcSender->line[1] = &time;
-			xQueueSend(queue_lcd, &rtcSender, portMAX_DELAY);
-			vTaskDelay(50);
+			HAL_RTC_GetTime(&hrtc, &rtc_time, RTC_FORMAT_BIN);
+			HAL_RTC_GetDate(&hrtc, &rtc_date, RTC_FORMAT_BIN);
 			break;
 //		case State_Configure_Date_DD:
 //			rtcSender->line[0] = &date;
 //
 		default:
 			break;
+
 		}
-#endif
+		dateTimeSender = pvPortMalloc(sizeof(RTC_DateTime_t));
+		dateTimeSender->date = &rtc_date;
+		dateTimeSender->time = &rtc_time;
+
+		xQueueSend(queue_lcd, &dateTimeSender, portMAX_DELAY);
+		vTaskDelay(50);
 	}
 }
 
@@ -159,6 +164,10 @@ void Task_Lcd(void *param) {
 //	LcdDisplayData_t *rtcReceiver;
 	RTC_DateTime_t *rtcReceiver;
 	uint8_t blink = 0;
+
+	CursorPos_t cursor;
+	uint8_t data_len = 0;
+	memset(&cursor, 0, sizeof(CursorPos_t));
 
 	if (lcd16x2_i2c_init(&hi2c1) == false) {
 		Error_Handler();
@@ -174,27 +183,73 @@ void Task_Lcd(void *param) {
 	while (1) {
 		xQueueReceive(queue_lcd, &rtcReceiver, portMAX_DELAY);
 		char *format;
+
+		data_len = 2;
+//		char *format;
+//		format = (rtcReceiver->time->TimeFormat == RTC_HOURFORMAT12_AM) ? "AM" : "PM";
+//		lcd16x2_i2c_setCursor(0, 0);
+//		lcd16x2_i2c_printf("%02d-%02d-%2d", rtcReceiver->date->Month, rtcReceiver->date->Date, 2000 + rtcReceiver->date->Year);
+//		vTaskDelay(1);
+//		lcd16x2_i2c_setCursor(1, 0);
+//		lcd16x2_i2c_printf("%02d:%02d:%02d [%s]", rtcReceiver->time->Hours, rtcReceiver->time->Minutes, rtcReceiver->time->Seconds, format);
+
 		format = (rtcReceiver->time->TimeFormat == RTC_HOURFORMAT12_AM) ? "AM" : "PM";
 		lcd16x2_i2c_setCursor(0, 0);
 		lcd16x2_i2c_printf("%02d-%02d-%2d", rtcReceiver->date->Month, rtcReceiver->date->Date, 2000 + rtcReceiver->date->Year);
 		vTaskDelay(1);
 		lcd16x2_i2c_setCursor(1, 0);
 		lcd16x2_i2c_printf("%02d:%02d:%02d [%s]", rtcReceiver->time->Hours, rtcReceiver->time->Minutes, rtcReceiver->time->Seconds, format);
-		vPortFree(rtcReceiver);
+
 		switch (systemState) {
-		case State_Configure_Time_HH:
-			if (blink ^= 1) {
-				lcd16x2_i2c_setCursor(0, 0);
-				for (int i = 0; i < 2; i++) {
-					lcd16x2_i2c_printf(" ");
-				}
-			}
-			vTaskDelay(1000);
-			break;
-		default:
+		case State_Normal:
 			vTaskDelay(50);
 			break;
+		case State_Configure_Time_HH:
+			cursor.row = CURSOR_ROW_TIME;
+			cursor.col = CURSOR_TIME_HH;
+			break;
+		case State_Configure_Time_MM:
+			cursor.row = CURSOR_ROW_TIME;
+			cursor.col = CURSOR_TIME_MM;
+			break;
+		case State_Configure_Time_SS:
+			cursor.row = CURSOR_ROW_TIME;
+			cursor.col = CURSOR_TIME_SS;
+			break;
+		case State_Configure_Time_FORMAT:
+			cursor.row = CURSOR_ROW_TIME;
+			cursor.col = CURSOR_TIME_FORMAT;
+			break;
+		case State_Configure_Date_DD:
+			cursor.row = CURSOR_ROW_DATE;
+			cursor.col = CURSOR_DATE_DD;
+			break;
+		case State_Configure_Date_MM:
+			cursor.row = CURSOR_ROW_DATE;
+			cursor.col = CURSOR_DATE_MM;
+			break;
+		case State_Configure_Date_YY:
+			cursor.row = CURSOR_ROW_DATE;
+			cursor.col = CURSOR_DATE_YY;
+			data_len = 4;
+			break;
+		default:
+			break;
 		}
+		if (systemState != State_Normal) {
+
+			if (blink ^= 1) {
+				lcd16x2_i2c_setCursor(cursor.row, cursor.col);
+				for (int i = 0; i < data_len; i++) {
+					lcd16x2_i2c_printf(" ");
+				}
+				vTaskDelay(200);
+			}
+			else{
+				vTaskDelay(500);
+			}
+		}
+		vPortFree(rtcReceiver);
 
 	}
 }
