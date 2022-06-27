@@ -75,6 +75,7 @@ extern QueueHandle_t queue_lcd;
 
 State_e systemState = State_Normal;
 
+uint8_t key;
 /* USER CODE END Variables */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -83,13 +84,14 @@ State_e systemState = State_Normal;
 
 /* Private application code --------------------------------------------------*/
 /* USER CODE BEGIN Application */
-void Task_StateController(void* param){
-	while(1){
-		if (xTaskNotifyWait(0x00, UINT_MAX, (uint32_t*)NULL, portMAX_DELAY) == pdTRUE){
+void Task_StateController(void *param) {
+	while (1) {
+		if (xTaskNotifyWait(0x00, UINT_MAX, (uint32_t*) NULL,
+		portMAX_DELAY) == pdTRUE) {
 			//Delay added for debouncing
 			vTaskDelay(50);
 			systemState++;
-			if(systemState == State_End){
+			if (systemState == State_End) {
 				systemState = State_Normal;
 			}
 		}
@@ -104,17 +106,17 @@ void Task_Rtc(void *param) {
 	uint32_t ulNotifiedValue;
 	while (1) {
 		switch (systemState) {
-			case State_Normal:
-				date = rtc_get_date();
-				time = rtc_get_time();
-				rtcSender = pvPortMalloc(sizeof(LcdDisplayData_t));
-				rtcSender->line[0] = &date;
-				rtcSender->line[1] = &time;
-				xQueueSend(queue_lcd, &rtcSender, portMAX_DELAY);
-				vTaskDelay(50);
-				break;
-			default:
-				break;
+		case State_Normal:
+			date = rtc_get_date();
+			time = rtc_get_time();
+			rtcSender = pvPortMalloc(sizeof(LcdDisplayData_t));
+			rtcSender->line[0] = &date;
+			rtcSender->line[1] = &time;
+			xQueueSend(queue_lcd, &rtcSender, portMAX_DELAY);
+			vTaskDelay(50);
+			break;
+		default:
+			break;
 		}
 
 	}
@@ -143,19 +145,50 @@ void Task_Lcd(void *param) {
 		lcd16x2_i2c_printf(*(rtcReceiver->line[1]));
 		vPortFree(rtcReceiver);
 		switch (systemState) {
-			case State_Configure_Time_HH:
-				lcd16x2_i2c_setCursor(0, 0);
-				lcd16x2_i2c_printf("  ");
-				break;
-			default:
-				break;
+		case State_Configure_Time_HH:
+			lcd16x2_i2c_setCursor(0, 0);
+			lcd16x2_i2c_printf("  ");
+			break;
+		default:
+			break;
 		}
 		vTaskDelay(50);
 	}
 }
 
-void Task_Interface(void* param){
-	while(1){
+void Task_Interface(void *param) {
+	while (1) {
+		/* Make ROW 1 LOW and all other ROWs HIGH */
+		HAL_GPIO_WritePin(KEY_R1_GPIO_Port, KEY_R1_Pin, GPIO_PIN_RESET);  //Pull the R1 low
+		HAL_GPIO_WritePin(KEY_R2_GPIO_Port, KEY_R2_Pin, GPIO_PIN_SET);  // Pull the R2 High
+
+		if (!(HAL_GPIO_ReadPin(KEY_L1_GPIO_Port, KEY_L1_Pin)))   // if the Col 1 is low
+		{
+			while (!(HAL_GPIO_ReadPin(KEY_L1_GPIO_Port, KEY_L1_Pin)));   // wait till the button is pressed
+			key = '1';
+		}
+
+		if (!(HAL_GPIO_ReadPin(KEY_L2_GPIO_Port, KEY_L2_Pin)))   // if the Col 2 is low
+		{
+			while (!(HAL_GPIO_ReadPin(KEY_L2_GPIO_Port, KEY_L2_Pin)));   // wait till the button is pressed
+			key ='2';
+		}
+
+		/* Make ROW 2 LOW and all other ROWs HIGH */
+		HAL_GPIO_WritePin(KEY_R1_GPIO_Port, KEY_R1_Pin, GPIO_PIN_SET);  //Pull the R1 high
+		HAL_GPIO_WritePin(KEY_R2_GPIO_Port, KEY_R2_Pin, GPIO_PIN_RESET);  // Pull the R2 low
+
+		if (!(HAL_GPIO_ReadPin(KEY_L1_GPIO_Port, KEY_L1_Pin)))   // if the Col 1 is low
+		{
+			while (!(HAL_GPIO_ReadPin(KEY_L1_GPIO_Port, KEY_L1_Pin)));   // wait till the button is pressed
+			key = '3';
+		}
+
+		if (!(HAL_GPIO_ReadPin(KEY_L2_GPIO_Port, KEY_L2_Pin)))   // if the Col 2 is low
+		{
+			while (!(HAL_GPIO_ReadPin(KEY_L2_GPIO_Port, KEY_L2_Pin)));   // wait till the button is pressed
+			key ='4';
+		}
 
 	}
 }
