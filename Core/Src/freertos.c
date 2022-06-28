@@ -88,6 +88,7 @@ extern TaskHandle_t task_stateControl;
 extern TaskHandle_t task_interface;
 
 extern QueueHandle_t queue_lcd;
+extern QueueHandle_t queue_input;
 
 State_e systemState = State_Normal;
 State_e tmpState = State_Normal;
@@ -103,24 +104,24 @@ uint8_t keyInput;
 /* USER CODE BEGIN Application */
 void Task_StateController(void *param) {
 	BaseType_t notifiedValue;
+	char userInput = 0;
 
 	while (1) {
-		if (xTaskNotifyWait(0x00, UINT_MAX, &notifiedValue,
-		portMAX_DELAY) == pdTRUE) {
-
-			if (notifiedValue == 'U') {
-				systemState--;
-				if (systemState > UINT8_MAX - 1) //Check if overflow happens
-					systemState = State_Configure_Time_FORMAT;
-			} else if (notifiedValue == 'D') {
-				systemState++;
+		if (xQueuePeek(queue_input, &(userInput), pdMS_TO_TICKS(10))) {
+			if (userInput == 'U' || userInput == 'D') {
+				xQueueReceive(queue_input, &(userInput), pdMS_TO_TICKS(0));
+				if (userInput == 'U') {
+					systemState--;
+					if (systemState > UINT8_MAX - 1) //Check if overflow happens
+						systemState = State_Configure_Time_FORMAT;
+				} else if (userInput == 'D') {
+					systemState++;
+				}
+				if (systemState == State_End) {
+					systemState = State_Normal;
+				}
 			}
-
-			if (systemState == State_End) {
-				systemState = State_Normal;
-			}
-			xTaskNotify(task_rtc, systemState, eSetValueWithOverwrite);
-
+//			xTaskNotify(task_rtc, systemState, eSetValueWithOverwrite);
 		}
 	}
 
@@ -254,13 +255,13 @@ void Task_Interface(void *param) {
 
 		if ((HAL_GPIO_ReadPin(KEY_L1_GPIO_Port, KEY_L1_Pin)))   // if the Col 1 is low
 		{
-			while(HAL_GPIO_ReadPin(KEY_L1_GPIO_Port, KEY_L1_Pin));
+			while (HAL_GPIO_ReadPin(KEY_L1_GPIO_Port, KEY_L1_Pin));
 			tmp = 'D';
 		}
 
 		if ((HAL_GPIO_ReadPin(KEY_L2_GPIO_Port, KEY_L2_Pin)))   // if the Col 2 is low
 		{
-			while(HAL_GPIO_ReadPin(KEY_L2_GPIO_Port, KEY_L2_Pin));
+			while (HAL_GPIO_ReadPin(KEY_L2_GPIO_Port, KEY_L2_Pin));
 			tmp = 'O';
 		}
 
@@ -270,18 +271,20 @@ void Task_Interface(void *param) {
 
 		if ((HAL_GPIO_ReadPin(KEY_L1_GPIO_Port, KEY_L1_Pin)))   // if the Col 1 is low
 		{
-			while(HAL_GPIO_ReadPin(KEY_L1_GPIO_Port, KEY_L1_Pin));
+			while (HAL_GPIO_ReadPin(KEY_L1_GPIO_Port, KEY_L1_Pin));
 			tmp = 'U';
 		}
 
 		if ((HAL_GPIO_ReadPin(KEY_L2_GPIO_Port, KEY_L2_Pin)))   // if the Col 2 is low
 		{
-			while(HAL_GPIO_ReadPin(KEY_L2_GPIO_Port, KEY_L2_Pin));
+			while (HAL_GPIO_ReadPin(KEY_L2_GPIO_Port, KEY_L2_Pin));
 			tmp = 'I';
 		}
 
 		keyInput = tmp; //D: down, U: up, I: in, O: out
-		while(xTaskNotify(task_stateControl, keyInput, eSetValueWithoutOverwrite) == pdFALSE);
+		if (keyInput != 0) {
+			xQueueSend(queue_input, (void* ) &keyInput, pdMS_TO_TICKS(5));
+		}
 	}
 }
 /* USER CODE END Application */

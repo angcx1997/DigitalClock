@@ -70,6 +70,7 @@ TaskHandle_t task_stateControl;
 TaskHandle_t task_interface;
 
 QueueHandle_t queue_lcd;
+QueueHandle_t queue_input;
 
 volatile uint8_t button_input = 0;
 /* USER CODE END PV */
@@ -154,6 +155,8 @@ int main(void)
 	/* add queues, ... */
 	queue_lcd = xQueueCreate(10, sizeof(sizeof(size_t))); //store address of pointer
 	configASSERT(queue_lcd != NULL);
+	queue_input = xQueueCreate(10, sizeof(char)); //store address of pointer
+	configASSERT(queue_input != NULL);
   /* USER CODE END RTOS_QUEUES */
 
   /* Create the thread(s) */
