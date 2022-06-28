@@ -92,7 +92,7 @@ char* rtc_get_time(void) {
 }
 
 void rtc_configure_time(RTC_TimeTypeDef *time) {
-	time->TimeFormat = RTC_HOURFORMAT12_AM;
+//	time->TimeFormat = RTC_HOURFORMAT12_AM;
 	time->DayLightSaving = RTC_DAYLIGHTSAVING_NONE;
 	time->StoreOperation = RTC_STOREOPERATION_RESET;
 

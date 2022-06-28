@@ -63,9 +63,9 @@ typedef struct {
 /* USER CODE BEGIN PD */
 #define CURSOR_ROW_DATE 0
 #define CURSOR_ROW_TIME 1
-#define CURSOR_DATE_DD 0
-#define CURSOR_DATE_MM 3
-#define CURSOR_DATE_YY 6
+#define CURSOR_DATE_DD 8
+#define CURSOR_DATE_MM 5
+#define CURSOR_DATE_YY 0
 #define CURSOR_TIME_HH 0
 #define CURSOR_TIME_MM 3
 #define CURSOR_TIME_SS 6
@@ -120,8 +120,9 @@ void Task_StateController(void *param) {
 				if (systemState == State_End) {
 					systemState = State_Normal;
 				}
+			} else {
+				xTaskNotify(task_rtc, 0, eNoAction);
 			}
-//			xTaskNotify(task_rtc, systemState, eSetValueWithOverwrite);
 		}
 	}
 
@@ -134,27 +135,102 @@ void Task_Rtc(void *param) {
 	memset(&rtc_date, 0, sizeof(rtc_date));
 	memset(&rtc_time, 0, sizeof(rtc_time));
 
-	uint32_t ulNotifiedValue;
+	char userInput = '\0';
+	int8_t action = 0;
+	bool inConfigMode = false;
 	while (1) {
 		//Get RTC current date and time
+		if (systemState != State_Normal) {
+			if (xTaskNotifyWait(0x00, ULONG_MAX, NULL, pdMS_TO_TICKS(0)) == pdTRUE) {
+				if (xQueueReceive(queue_input, &(userInput), pdMS_TO_TICKS(0)) == pdTRUE) {
+					if (userInput == 'I')
+						action = 1;
+					else if (userInput == 'O')
+						action = -1;
+				}
+			}
+		}
+
+		if(systemState != State_Normal){
+			inConfigMode = true;
+		}
 		switch (systemState) {
 		case State_Normal:
+			if(inConfigMode){
+				rtc_configure_time(&rtc_time);
+				rtc_configure_date(&rtc_date);
+				inConfigMode = false;
+			}
 			HAL_RTC_GetTime(&hrtc, &rtc_time, RTC_FORMAT_BIN);
 			HAL_RTC_GetDate(&hrtc, &rtc_date, RTC_FORMAT_BIN);
 			break;
-//		case State_Configure_Date_DD:
-//			rtcSender->line[0] = &date;
-//
+
+		case State_Configure_Date_DD:
+			rtc_date.Date += action;
+			if (0 == rtc_date.Date){
+				rtc_date.Date = 31;
+			}else if (rtc_date.Date > 31){
+				rtc_date.Date = 1;
+			}
+			break;
+		case State_Configure_Date_MM:
+			rtc_date.Month += action;
+			if (0 == rtc_date.Month){
+				rtc_date.Month = 12;
+			}else if (rtc_date.Month > 31){
+				rtc_date.Month = 1;
+			}
+			break;
+		case State_Configure_Date_YY:
+			rtc_date.Year += action;
+			if (rtc_date.Year > UINT8_MAX - 1){
+				rtc_date.Year = 99;
+			}else if (rtc_date.Year > 99){
+				rtc_date.Year = 0;
+			}
+			break;
+		case State_Configure_Time_HH:
+			rtc_time.Hours += action;
+			if (0 == rtc_time.Hours){
+				rtc_time.Hours = 12;
+			}else if (rtc_time.Hours > 12) {
+				rtc_time.Hours = 1;
+			}
+			break;
+		case State_Configure_Time_MM:
+			rtc_time.Minutes += action;
+			if (rtc_time.Minutes > UINT8_MAX - 1) {
+				rtc_time.Minutes = 59;
+			}
+			else if (rtc_time.Minutes >= 60) {
+				rtc_time.Minutes = 0;
+			}
+			break;
+		case State_Configure_Time_SS:
+			rtc_time.Seconds += action;
+			if (rtc_time.Seconds > UINT8_MAX - 1) {
+				rtc_time.Seconds = 59;
+			}
+			 else if (rtc_time.Seconds >= 60) {
+				rtc_time.Seconds = 0;
+			}
+			break;
+		case State_Configure_Time_FORMAT:
+			if(0 != action){
+				rtc_time.TimeFormat ^= 0x40;
+			}
+			break;
 		default:
 			break;
-
 		}
+
 		dateTimeSender = pvPortMalloc(sizeof(RTC_DateTime_t));
 		dateTimeSender->date = &rtc_date;
 		dateTimeSender->time = &rtc_time;
 
 		xQueueSend(queue_lcd, &dateTimeSender, portMAX_DELAY);
 		vTaskDelay(50);
+		action = 0;
 	}
 }
 
@@ -179,7 +255,7 @@ void Task_Lcd(void *param) {
 	HAL_Delay(1000);
 	lcd16x2_i2c_clear();
 	while (1) {
-		xQueueReceive(queue_lcd, &rtcReceiver, portMAX_DELAY);
+		xQueueReceive(queue_lcd, &rtcReceiver, 1);
 		char *format;
 
 		//Default space occupied is 2
@@ -188,7 +264,7 @@ void Task_Lcd(void *param) {
 		//Display rtc data
 		format = (rtcReceiver->time->TimeFormat == RTC_HOURFORMAT12_AM) ? "AM" : "PM";
 		lcd16x2_i2c_setCursor(0, 0);
-		lcd16x2_i2c_printf("%02d-%02d-%2d", rtcReceiver->date->Month, rtcReceiver->date->Date, 2000 + rtcReceiver->date->Year);
+		lcd16x2_i2c_printf("%02d-%02d-%02d", 2000 + rtcReceiver->date->Year, rtcReceiver->date->Month, rtcReceiver->date->Date);
 		vTaskDelay(1);
 		lcd16x2_i2c_setCursor(1, 0);
 		lcd16x2_i2c_printf("%02d:%02d:%02d [%s]", rtcReceiver->time->Hours, rtcReceiver->time->Minutes, rtcReceiver->time->Seconds, format);
@@ -196,7 +272,7 @@ void Task_Lcd(void *param) {
 		//Set cursor position accordingly
 		switch (systemState) {
 		case State_Normal:
-			vTaskDelay(50);
+			vTaskDelay(100);
 			break;
 		case State_Configure_Time_HH:
 			cursor.row = CURSOR_ROW_TIME;
@@ -285,6 +361,7 @@ void Task_Interface(void *param) {
 		if (keyInput != 0) {
 			xQueueSend(queue_input, (void* ) &keyInput, pdMS_TO_TICKS(5));
 		}
+		vTaskDelay(30);
 	}
 }
 /* USER CODE END Application */
