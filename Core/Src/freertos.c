@@ -107,8 +107,6 @@ void Task_StateController(void *param) {
 	while (1) {
 		if (xTaskNotifyWait(0x00, UINT_MAX, &notifiedValue,
 		portMAX_DELAY) == pdTRUE) {
-			//Delay added for debouncing
-			vTaskDelay(pdMS_TO_TICKS(200));
 
 			if (notifiedValue == 'U') {
 				systemState--;
@@ -138,7 +136,6 @@ void Task_Rtc(void *param) {
 	uint32_t ulNotifiedValue;
 	while (1) {
 		//Get RTC current date and time
-
 		switch (systemState) {
 		case State_Normal:
 			HAL_RTC_GetTime(&hrtc, &rtc_time, RTC_FORMAT_BIN);
@@ -184,15 +181,10 @@ void Task_Lcd(void *param) {
 		xQueueReceive(queue_lcd, &rtcReceiver, portMAX_DELAY);
 		char *format;
 
+		//Default space occupied is 2
 		data_len = 2;
-//		char *format;
-//		format = (rtcReceiver->time->TimeFormat == RTC_HOURFORMAT12_AM) ? "AM" : "PM";
-//		lcd16x2_i2c_setCursor(0, 0);
-//		lcd16x2_i2c_printf("%02d-%02d-%2d", rtcReceiver->date->Month, rtcReceiver->date->Date, 2000 + rtcReceiver->date->Year);
-//		vTaskDelay(1);
-//		lcd16x2_i2c_setCursor(1, 0);
-//		lcd16x2_i2c_printf("%02d:%02d:%02d [%s]", rtcReceiver->time->Hours, rtcReceiver->time->Minutes, rtcReceiver->time->Seconds, format);
 
+		//Display rtc data
 		format = (rtcReceiver->time->TimeFormat == RTC_HOURFORMAT12_AM) ? "AM" : "PM";
 		lcd16x2_i2c_setCursor(0, 0);
 		lcd16x2_i2c_printf("%02d-%02d-%2d", rtcReceiver->date->Month, rtcReceiver->date->Date, 2000 + rtcReceiver->date->Year);
@@ -200,6 +192,7 @@ void Task_Lcd(void *param) {
 		lcd16x2_i2c_setCursor(1, 0);
 		lcd16x2_i2c_printf("%02d:%02d:%02d [%s]", rtcReceiver->time->Hours, rtcReceiver->time->Minutes, rtcReceiver->time->Seconds, format);
 
+		//Set cursor position accordingly
 		switch (systemState) {
 		case State_Normal:
 			vTaskDelay(50);
@@ -237,20 +230,18 @@ void Task_Lcd(void *param) {
 			break;
 		}
 		if (systemState != State_Normal) {
-
+			//Add blinking feature
 			if (blink ^= 1) {
 				lcd16x2_i2c_setCursor(cursor.row, cursor.col);
 				for (int i = 0; i < data_len; i++) {
 					lcd16x2_i2c_printf(" ");
 				}
 				vTaskDelay(200);
-			}
-			else{
+			} else {
 				vTaskDelay(500);
 			}
 		}
 		vPortFree(rtcReceiver);
-
 	}
 }
 
@@ -263,11 +254,13 @@ void Task_Interface(void *param) {
 
 		if ((HAL_GPIO_ReadPin(KEY_L1_GPIO_Port, KEY_L1_Pin)))   // if the Col 1 is low
 		{
+			while(HAL_GPIO_ReadPin(KEY_L1_GPIO_Port, KEY_L1_Pin));
 			tmp = 'D';
 		}
 
 		if ((HAL_GPIO_ReadPin(KEY_L2_GPIO_Port, KEY_L2_Pin)))   // if the Col 2 is low
 		{
+			while(HAL_GPIO_ReadPin(KEY_L2_GPIO_Port, KEY_L2_Pin));
 			tmp = 'O';
 		}
 
@@ -277,17 +270,18 @@ void Task_Interface(void *param) {
 
 		if ((HAL_GPIO_ReadPin(KEY_L1_GPIO_Port, KEY_L1_Pin)))   // if the Col 1 is low
 		{
+			while(HAL_GPIO_ReadPin(KEY_L1_GPIO_Port, KEY_L1_Pin));
 			tmp = 'U';
 		}
 
 		if ((HAL_GPIO_ReadPin(KEY_L2_GPIO_Port, KEY_L2_Pin)))   // if the Col 2 is low
 		{
+			while(HAL_GPIO_ReadPin(KEY_L2_GPIO_Port, KEY_L2_Pin));
 			tmp = 'I';
 		}
 
 		keyInput = tmp; //D: down, U: up, I: in, O: out
-		xTaskNotify(task_stateControl, keyInput, eSetValueWithOverwrite);
-
+		while(xTaskNotify(task_stateControl, keyInput, eSetValueWithoutOverwrite) == pdFALSE);
 	}
 }
 /* USER CODE END Application */
