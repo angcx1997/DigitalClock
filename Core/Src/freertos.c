@@ -364,6 +364,12 @@ void Task_Interface(void *param) {
 		vTaskDelay(30);
 	}
 }
+
+void Task_LedRing(void* param){
+	while(1){
+
+	}
+}
 /* USER CODE END Application */
 
 /************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/

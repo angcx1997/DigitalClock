@@ -32,7 +32,10 @@ extern "C" {
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-
+#include "FreeRTOS.h"
+#include "task.h"
+#include "queue.h"
+#include "timers.h"
 /* USER CODE END Includes */
 
 /* Exported types ------------------------------------------------------------*/
@@ -60,7 +63,7 @@ void Task_Rtc(void* param);
 void Task_Lcd(void* param);
 void Task_StateController(void* param);
 void Task_Interface(void* param);
-
+void Task_LedRing(void* param);
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/

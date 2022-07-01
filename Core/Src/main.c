@@ -23,9 +23,7 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-#include "FreeRTOS.h"
-#include "task.h"
-#include "queue.h"
+#include "ws2812b.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -68,9 +66,12 @@ TaskHandle_t task_rtc;
 TaskHandle_t task_lcd;
 TaskHandle_t task_stateControl;
 TaskHandle_t task_interface;
+TaskHandle_t task_ledRing;
 
 QueueHandle_t queue_lcd;
 QueueHandle_t queue_input;
+
+TimerHandle_t timer_ledRing;
 
 volatile uint8_t button_input = 0;
 /* USER CODE END PV */
@@ -88,7 +89,7 @@ static void MX_USB_OTG_FS_PCD_Init(void);
 void StartDefaultTask(void *argument);
 
 /* USER CODE BEGIN PFP */
-
+void vTimerLedRingUpdateCallback(TimerHandle_t pxTimer);
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -149,6 +150,7 @@ int main(void)
 
   /* USER CODE BEGIN RTOS_TIMERS */
 	/* start timers, add new ones, ... */
+  timer_ledRing = xTimerCreate("Led Ring Timer", pdMS_TO_TICKS(15), pdTRUE, (void*)0, vTimerLedRingUpdateCallback);
   /* USER CODE END RTOS_TIMERS */
 
   /* USER CODE BEGIN RTOS_QUEUES */
@@ -157,6 +159,7 @@ int main(void)
 	configASSERT(queue_lcd != NULL);
 	queue_input = xQueueCreate(10, sizeof(char)); //store address of pointer
 	configASSERT(queue_input != NULL);
+
   /* USER CODE END RTOS_QUEUES */
 
   /* Create the thread(s) */
@@ -175,6 +178,10 @@ int main(void)
 	status = xTaskCreate(Task_Interface, "interface_task", 250, NULL, 3,
 			&task_interface);
 	configASSERT(status == pdPASS);
+	status = xTaskCreate(Task_LedRing, "led_ring_task", 250, NULL, 3,
+			&task_ledRing);
+	configASSERT(status == pdPASS);
+
   /* USER CODE END RTOS_THREADS */
 
   /* USER CODE BEGIN RTOS_EVENTS */
@@ -752,8 +759,8 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(USB_OverCurrent_GPIO_Port, &GPIO_InitStruct);
-
   /*Configure GPIO pins : RMII_TX_EN_Pin RMII_TXD0_Pin */
+
   GPIO_InitStruct.Pin = RMII_TX_EN_Pin|RMII_TXD0_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
@@ -789,6 +796,10 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
 	default:
 		break;
 	}
+}
+
+void vTimerLedRingUpdateCallback(TimerHandle_t pxTimer){
+	WS2812_update();
 }
 /* USER CODE END 4 */
 
